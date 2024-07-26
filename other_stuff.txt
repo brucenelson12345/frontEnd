@@ -1,0 +1,8 @@
+python3 efficientlite0_quanteval.py \
+--model-config efficientnetlite0_w4a8 \
+--dataset-path ImageNet2012-download-main/ImageNet2012-download-main \
+--batch-size 64
+
+Files Needed
+aimet-develop.zip  aimet-model-zoo-develop.zip  aimet_zoo_torch-1.5.0-py3-none-any.whl  Dockerfile  req_parser.py  requirements.txt  stuff
+efficientnetlite0_quanteval.py  ILSVRC2012_img_val.tar  ImageNet2012-download-main.zip
