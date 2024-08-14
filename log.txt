@@ -1,0 +1,44 @@
+python3 validation.py --model 'model/yolov8s.engine' --q int8 --data 'datasets/coco.yaml'
+Ultralytics YOLOv8.0.216 🚀 Python-3.10.12 torch-2.1.2+cu121 CUDA:0 (NVIDIA GeForce RTX 4090, 24195MiB)
+Loading model/yolov8s.engine for TensorRT inference...
+[08/14/2024-14:52:31] [TRT] [I] [MemUsageChange] Init CUDA: CPU +574, GPU +0, now: CPU 701, GPU 1785 (MiB)
+[08/14/2024-14:52:31] [TRT] [I] Loaded engine size: 51 MiB
+[08/14/2024-14:52:32] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +1562, GPU +412, now: CPU 2346, GPU 2247 (MiB)
+[08/14/2024-14:52:32] [TRT] [W] TensorRT was linked against cuDNN 8.4.1 but loaded cuDNN 8.4.0
+[08/14/2024-14:52:32] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in engine deserialization: CPU +0, GPU +0, now: CPU 0, GPU 0 (MiB)
+[08/14/2024-14:52:32] [TRT] [I] [MemUsageChange] Init cuDNN: CPU +0, GPU +32, now: CPU 2295, GPU 2247 (MiB)
+[08/14/2024-14:52:32] [TRT] [W] TensorRT was linked against cuDNN 8.4.1 but loaded cuDNN 8.4.0
+[08/14/2024-14:52:32] [TRT] [I] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +0, now: CPU 0, GPU 0 (MiB)
+val: Scanning /home/pride/work/AIMET/yolov8/YOLO8_quantization/quantization_OpenVino/datasets/coco/labels/val2017.cache.
+                 Class     Images  Instances      Box(P          R      mAP50  mAP50-95): 100%|██████████| 5000/5000 [00
+                   all       5000      36335      0.683      0.562      0.612      0.447
+Speed: 0.2ms preprocess, 1.5ms inference, 0.0ms loss, 0.6ms postprocess per image
+Saving runs/detect/val2/predictions.json...
+
+Evaluating pycocotools mAP using runs/detect/val2/predictions.json and /home/pride/work/AIMET/yolov8/YOLO8_quantization/quantization_OpenVino/datasets/coco/annotations/instances_val2017.json...
+loading annotations into memory...
+Done (t=0.17s)
+creating index...
+index created!
+Loading and preparing results...
+DONE (t=2.50s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=21.02s).
+Accumulating evaluation results...
+DONE (t=4.76s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.450
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.617
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.487
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.260
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.497
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.610
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.357
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.590
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.644
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.439
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.708
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.797
+Results saved to runs/detect/val2
