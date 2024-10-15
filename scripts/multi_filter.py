@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 import os
 import yaml
+import shutil
+
 
 class CocoFilter():
     """ Filters the COCO dataset
@@ -162,7 +164,7 @@ class CocoFilter():
 
         print('Filtered json saved.')
 
-    def filter_yaml(self, input_yaml, output_yaml, categories):
+    def filter_yaml(self, input_yaml, output_yaml, dataset_dir, categories):
         with open(input_yaml) as stream:
             try:
                 input_data = yaml.safe_load(stream)
@@ -174,11 +176,24 @@ class CocoFilter():
         dataset_types = ["train", "val", "test"]
         for dataset_type in dataset_types:
             parts = Path(input_data[dataset_type]).parts
-            stripped_path = Path(*parts[parts.index("datasets"):])
-            input_data[dataset_type] = "../" + str(stripped_path)
+            stripped_path = Path(*parts[parts.index("datasets") + 1:])
+            input_data[dataset_type] = dataset_dir + '/' + str(stripped_path)
         
         with open(output_yaml, 'w') as outfile:
             yaml.dump(input_data, outfile, default_flow_style=None)
+    
+    def image_sorter(self, config_file, dataset_input, dataset_output):
+        with open(file, 'r') as openfile:
+            data = json.load(openfile)
+
+        input_dir = dataset_input + '/' + '/images/'
+        output_dir = dataset_output + '/' + '/images/'
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        for images in data['images']:
+            shutil.copyfile(input_dir + images["file_name"], output_dir + images["file_name"])
 
 if __name__ == "__main__":
     import argparse
@@ -187,39 +202,74 @@ if __name__ == "__main__":
     "Filters a COCO Instances JSON file to only include specified categories. "
     "This includes images, and annotations. Does not modify 'info' or 'licenses'.")
     
-    parser.add_argument("-i", "--input_dir", dest="input_dir",
+    parser.add_argument("-ci", "--config_input_dir", dest="config_input_dir",
         help="path to a directory containing coco style .json and .yaml files")
-    parser.add_argument("-o", "--output_dir", dest="output_dir",
+    parser.add_argument("-co", "--config_output_dir", dest="config_output_dir",
         help="path to save new .json and .yaml files")
+    parser.add_argument("-di", "--dataset_input_dir", dest="dataset_input_dir",
+        help="path dataset root of different image sets.")
+    parser.add_argument("-do", "--dataset_output_dir", dest="dataset_output_dir",
+        help="path to save new filtered dataset images.")
     parser.add_argument("-c", "--categories", nargs='+', dest="categories",
         help="List of category names separated by spaces, e.g. -c person dog bicycle")
 
     args = parser.parse_args()
 
     # Verify input path exists
-    if not os.path.exists(args.input_dir):
+    if not os.path.exists(args.config_input_dir):
         print('Input directory path not found.')
         print('Quitting early.')
         quit()
+    if not os.path.exists(args.dataset_input_dir):
+        print('Dataset directory path not found.')
+        print('Quitting early.')
+        quit()
     
-    # Verify output path does not already exist
-    if os.path.exists(args.output_dir):
-        should_continue = input('Output path already exists. Overwrite? (y/n) ').lower()
+    # Config file output dir, if none given, output dir is input dir + categories given
+    if args.config_output_dir is None:
+        separator = '_'
+        config_output_dir = args.config_input_dir + '_' + separator.join(args.categories)
+    else:
+        config_output_dir = args.config_output_dir
+    
+    # Verify config output path does not already exist
+    if os.path.exists(config_output_dir):
+        should_continue = input('Config output path already exists. Overwrite? (y/n) ').lower()
         if should_continue != 'y' and should_continue != 'yes':
             print('Quitting early.')
             quit()
     else:
-        os.mkdir(args.output_dir)
+        os.mkdir(config_output_dir)
+
+    # Dataset output dir, if none given, output dir is input dir + categories given
+    if args.dataset_output_dir is None:
+        separator = '_'
+        dataset_output_dir = args.dataset_input_dir + '_' + separator.join(args.categories)
+    else:
+        dataset_output_dir = args.dataset_output_dir
+
+    # Verify dataset output path does not already exist
+    if os.path.exists(dataset_output_dir):
+        should_continue = input('Dataset output path already exists. Overwrite? (y/n) ').lower()
+        if should_continue != 'y' and should_continue != 'yes':
+            print('Quitting early.')
+            quit()
+    else:
+        os.mkdir(dataset_output_dir)
     
     cf = CocoFilter()
-    for file in os.listdir(args.input_dir):
+    for file in os.listdir(args.config_input_dir):
         # filers .json file
         if file.endswith('.json') and not "combined" in file:
-            cf.filter_json(args.input_dir + '/' + file,
-                      args.output_dir + '/' + file,
+            cf.filter_json(args.config_input_dir + '/' + file,
+                      config_output_dir + '/' + file,
                       args.categories)
+            cf.image_sorter(config_output_dir + '/' + file,
+                            args.dataset_input_dir,
+                            dataset_output_dir)
         # updates .yaml file with select categories
         if file.endswith('.yaml'):
-            cf.filter_yaml(args.input_dir + '/' + file,
-                      args.output_dir + '/' + file,
+            cf.filter_yaml(args.config_input_dir + '/' + file,
+                      config_output_dir + '/' + file,
+                      args.dataset_input_dir,
                       args.categories)
