@@ -91,7 +91,7 @@ class CocoFilter():
                 original_seg_cat = segmentation['category_id']
                 if original_seg_cat in self.new_category_map.keys():
                     new_segmentation = dict(segmentation)
-                    new_segmentation['category_id'] = self.new_category_map[original_seg_cat]
+                    new_segmentation['category_id'] = self.new_category_map[original_seg_cat] - 1
                     new_segmentation['id'] = anno_id
                     anno_id += 1
                     self.new_segmentations.append(new_segmentation)
@@ -183,17 +183,37 @@ class CocoFilter():
             yaml.dump(input_data, outfile, default_flow_style=None)
     
     def image_sorter(self, config_file, dataset_input, dataset_output):
-        with open(file, 'r') as openfile:
+        with open(config_file, 'r') as openfile:
             data = json.load(openfile)
 
-        input_dir = dataset_input + '/' + '/images/'
-        output_dir = dataset_output + '/' + '/images/'
+        dataset_type = (config_file.rsplit('/', 1)[-1]).rsplit('_', 1)[0]
+        input_dir = dataset_input + '/' + dataset_type + '/images/'
+        output_dir = dataset_output + '/' + dataset_type + '/images/'
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
         for images in data['images']:
             shutil.copyfile(input_dir + images["file_name"], output_dir + images["file_name"])
+    
+    def parse_output_path(self, input_dir, output_dir, categories):
+        # Config file output dir, if none given, output dir is input dir + categories given
+        if output_dir is None:
+            separator = '_'
+            new_output_dir = input_dir + '_' + separator.join(categories)
+        else:
+            new_output_dir = output_dir
+        
+        # Verify config output path does not already exist
+        if os.path.exists(new_output_dir):
+            should_continue = input('Config output path already exists. Overwrite? (y/n) ').lower()
+            if should_continue != 'y' and should_continue != 'yes':
+                print('Quitting early.')
+                quit()
+        else:
+            os.mkdir(new_output_dir)
+            print(new_output_dir)
+            return new_output_dir
 
 if __name__ == "__main__":
     import argparse
@@ -224,52 +244,29 @@ if __name__ == "__main__":
         print('Dataset directory path not found.')
         print('Quitting early.')
         quit()
-    
-    # Config file output dir, if none given, output dir is input dir + categories given
-    if args.config_output_dir is None:
-        separator = '_'
-        config_output_dir = args.config_input_dir + '_' + separator.join(args.categories)
-    else:
-        config_output_dir = args.config_output_dir
-    
-    # Verify config output path does not already exist
-    if os.path.exists(config_output_dir):
-        should_continue = input('Config output path already exists. Overwrite? (y/n) ').lower()
-        if should_continue != 'y' and should_continue != 'yes':
-            print('Quitting early.')
-            quit()
-    else:
-        os.mkdir(config_output_dir)
 
-    # Dataset output dir, if none given, output dir is input dir + categories given
-    if args.dataset_output_dir is None:
-        separator = '_'
-        dataset_output_dir = args.dataset_input_dir + '_' + separator.join(args.categories)
-    else:
-        dataset_output_dir = args.dataset_output_dir
-
-    # Verify dataset output path does not already exist
-    if os.path.exists(dataset_output_dir):
-        should_continue = input('Dataset output path already exists. Overwrite? (y/n) ').lower()
-        if should_continue != 'y' and should_continue != 'yes':
-            print('Quitting early.')
-            quit()
-    else:
-        os.mkdir(dataset_output_dir)
-    
     cf = CocoFilter()
+
+    # Configures outpath paths
+    config_output_dir = cf.parse_output_path(args.config_input_dir, args.config_output_dir, args.categories)
+    dataset_output_dir = cf.parse_output_path(args.dataset_input_dir, args.dataset_output_dir, args.categories)
+
+    # Iterates through different dataset category for train, val, and test
+    for dataset in os.listdir(args.dataset_input_dir):
+        # Filters coco.json for only annotations for the categories selected
+        cf.filter_json(args.dataset_input_dir + '/' + dataset + '/coco.json',
+                    config_output_dir + '/' + dataset + '_coco.json',
+                    args.categories)
+        # Filters images for the categories selected
+        cf.image_sorter(config_output_dir + '/' + dataset + '_coco.json',
+                        args.dataset_input_dir,
+                        dataset_output_dir)
+    
+    # Updates .yaml with new train, val, and test paths along with categories
     for file in os.listdir(args.config_input_dir):
-        # filers .json file
-        if file.endswith('.json') and not "combined" in file:
-            cf.filter_json(args.config_input_dir + '/' + file,
-                      config_output_dir + '/' + file,
-                      args.categories)
-            cf.image_sorter(config_output_dir + '/' + file,
-                            args.dataset_input_dir,
-                            dataset_output_dir)
         # updates .yaml file with select categories
         if file.endswith('.yaml'):
             cf.filter_yaml(args.config_input_dir + '/' + file,
                       config_output_dir + '/' + file,
-                      args.dataset_input_dir,
+                      dataset_output_dir,
                       args.categories)

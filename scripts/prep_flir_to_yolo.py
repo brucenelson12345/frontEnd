@@ -14,6 +14,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Verify dataset path exists
+    if not os.path.exists(args.input_dir):
+        print('Input directory path not found.')
+        print('Quitting early.')
+        quit()
+
     for dir in os.scandir(args.input_dir):
         if dir.is_dir():
             # Renames directories with images from data to images
